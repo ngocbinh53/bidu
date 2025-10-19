@@ -8,13 +8,13 @@
     body {
       margin: 0;
       font-family: "Comic Sans MS", cursive;
-      background: linear-gradient(135deg, #ffd6e0, #ffe6eb);
-      overflow: hidden;
+      background: linear-gradient(135deg, #ffb6c1, #ffe6eb);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      overflow: hidden;
     }
 
     .wheel-container {
@@ -23,13 +23,13 @@
       height: 400px;
     }
 
-    .wheel {
-      width: 100%;
-      height: 100%;
+    canvas {
+      width: 400px;
+      height: 400px;
       border-radius: 50%;
       border: 10px solid white;
-      transition: transform 8s cubic-bezier(0.33, 1, 0.68, 1);
       box-shadow: 0 0 30px #ff99cc;
+      transition: transform 8s cubic-bezier(0.33, 1, 0.68, 1);
     }
 
     .center-text {
@@ -41,8 +41,8 @@
       font-size: 1.5em;
       text-shadow: 0 0 10px #ff69b4;
       font-weight: bold;
-      text-align: center;
       cursor: pointer;
+      text-align: center;
       user-select: none;
     }
 
@@ -62,8 +62,25 @@
     #result {
       margin-top: 30px;
       font-size: 1.5em;
-      color: #ff69b4;
+      color: #ff1493;
       text-shadow: 0 0 10px white;
+    }
+
+    #musicBtn {
+      background: #ff69b4;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff99cc;
+      margin-top: 20px;
+      transition: transform 0.2s;
+    }
+
+    #musicBtn:hover {
+      transform: scale(1.1);
     }
 
     .heart {
@@ -82,14 +99,17 @@
 <body>
 
   <div class="wheel-container">
-    <canvas id="wheel" class="wheel" width="400" height="400"></canvas>
+    <canvas id="wheel" width="400" height="400"></canvas>
     <div class="center-text" id="spinText">💘 Click để quay 💘</div>
     <div class="pointer"></div>
   </div>
   <div id="result"></div>
+  <button id="musicBtn">🎵 Bật nhạc 💞</button>
 
-  <!-- Nhạc nền (sẽ play sau khi click lần đầu) -->
-  <audio id="loveSong" src="https://docs.google.com/uc?export=open&id=1MWyAaRXAv0z0_KI1pEoRC1FofgsaG8VZ"></audio>
+  <!-- Nhạc nền (MP3 thật) -->
+  <audio id="loveSong" preload="auto" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_0b91ad41e1.mp3?filename=romantic-love-ambient-112199.mp3" type="audio/mpeg">
+  </audio>
 
   <script>
     const canvas = document.getElementById("wheel");
@@ -97,9 +117,10 @@
     const spinText = document.getElementById("spinText");
     const result = document.getElementById("result");
     const audio = document.getElementById("loveSong");
+    const musicBtn = document.getElementById("musicBtn");
 
     const gifts = ["Son", "Gấu bông", "Hoa", "Ăn lẩu", "Trang sức", "Túi xách", "Nước hoa", "Đi chơi", "Hôn 💋"];
-    const colors = ["#ff6666", "#ffcc00", "#66cc66", "#6699ff"];
+    const colors = ["#ff6699", "#ffcc00", "#66cc99", "#66b3ff", "#ff9966", "#cc99ff", "#ff6666", "#99ccff", "#ffcc99"];
 
     const radius = canvas.width / 2;
     const arc = (2 * Math.PI) / gifts.length;
@@ -110,15 +131,15 @@
         ctx.beginPath();
         ctx.fillStyle = colors[i % colors.length];
         ctx.moveTo(radius, radius);
-        ctx.arc(radius, radius, radius, angle, angle + arc, false);
+        ctx.arc(radius, radius, radius, angle, angle + arc);
         ctx.fill();
 
         ctx.save();
         ctx.translate(radius, radius);
         ctx.rotate(angle + arc / 2);
-        ctx.textAlign = "right";
         ctx.fillStyle = "white";
         ctx.font = "bold 18px Arial";
+        ctx.textAlign = "right";
         ctx.fillText(gifts[i], radius - 10, 10);
         ctx.restore();
       }
@@ -128,32 +149,36 @@
 
     let spinning = false;
     let rotation = 0;
-    let firstClick = true;
 
-    spinText.addEventListener("click", () => {
-      // Play nhạc sau lần click đầu tiên
-      if (firstClick) {
-        audio.play().catch(() => console.log("Tự động phát bị chặn"));
-        firstClick = false;
-      }
-
+    function spin() {
       if (spinning) return;
       spinning = true;
       result.innerHTML = "";
 
-      const spin = 360 * 10 + Math.floor(Math.random() * 360);
-      rotation += spin;
+      const spinAngle = 360 * 10 + Math.random() * 360;
+      rotation += spinAngle;
 
       canvas.style.transform = `rotate(${rotation}deg)`;
 
       setTimeout(() => {
         const deg = rotation % 360;
         const index = Math.floor((gifts.length - deg / 360 * gifts.length) % gifts.length);
-        const gift = gifts[index];
-        result.innerHTML = `💝 Kim Dung trúng: <b>${gift}</b> 💝`;
+        result.innerHTML = `💝 Kim Dung trúng: <b>${gifts[index]}</b> 💝`;
         createHearts();
         spinning = false;
       }, 8000);
+    }
+
+    spinText.addEventListener("click", spin);
+
+    musicBtn.addEventListener("click", () => {
+      if (audio.paused) {
+        audio.play().catch(() => alert("Trình duyệt đang chặn phát nhạc — hãy click lại!"));
+        musicBtn.textContent = "💞 Đang phát nhạc...";
+      } else {
+        audio.pause();
+        musicBtn.textContent = "🎵 Bật nhạc 💞";
+      }
     });
 
     function createHearts() {
@@ -168,5 +193,6 @@
       }
     }
   </script>
+
 </body>
 </html>
