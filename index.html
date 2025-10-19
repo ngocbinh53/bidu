@@ -1,197 +1,165 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💞 Vòng quay tình yêu 💞</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💞 Vòng quay tình yêu của Kim Dung 💞</title>
   <style>
     body {
-      margin: 0;
-      font-family: "Comic Sans MS", cursive;
-      background: linear-gradient(135deg, #ffb6c1, #ffe6eb);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
+      margin:0; padding:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #ffe4e9, #ffd6e3);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      color:#444;
     }
-
+    .heart-fall {
+      position:absolute;
+      top:-50px;
+      font-size:20px;
+      color:#ff69b4;
+      animation: fall 4s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes fall {
+      0% { transform: translateY(0) scale(0.8); opacity:1; }
+      100% { transform: translateY(700px) scale(1.4); opacity:0; }
+    }
     .wheel-container {
-      position: relative;
-      width: 400px;
-      height: 400px;
+      position:relative;
+      width:400px; height:400px;
     }
-
-    canvas {
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      border: 10px solid white;
-      box-shadow: 0 0 30px #ff99cc;
-      transition: transform 8s cubic-bezier(0.33, 1, 0.68, 1);
+    canvas#wheel {
+      width:400px; height:400px;
+      border-radius:50%;
+      border:10px solid #fff;
+      box-shadow:0 0 30px #ff99cc;
+      transition: transform 8s cubic-bezier(0.33,1,0.68,1);
     }
-
     .center-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 1.5em;
-      text-shadow: 0 0 10px #ff69b4;
-      font-weight: bold;
-      cursor: pointer;
-      text-align: center;
-      user-select: none;
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      font-size:1.4em;
+      color:#fff;
+      text-shadow:0 0 8px #ff69b4;
+      cursor:pointer;
+      user-select:none;
     }
-
     .pointer {
-      position: absolute;
-      right: -30px;
-      top: 50%;
+      position:absolute;
+      right:-30px;
+      top:50%;
       transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-top: 20px solid transparent;
-      border-bottom: 20px solid transparent;
-      border-left: 30px solid gold;
+      width:0; height:0;
+      border-top:20px solid transparent;
+      border-bottom:20px solid transparent;
+      border-left:30px solid gold;
       filter: drop-shadow(0 0 5px #ffb400);
     }
-
     #result {
-      margin-top: 30px;
-      font-size: 1.5em;
-      color: #ff1493;
-      text-shadow: 0 0 10px white;
+      margin-top:30px;
+      font-size:1.6em;
+      color:#ff1493;
+      text-shadow:0 0 10px white;
+      text-align:center;
     }
-
-    #musicBtn {
-      background: #ff69b4;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 0 10px #ff99cc;
-      margin-top: 20px;
-      transition: transform 0.2s;
+    .kitty {
+      position:absolute;
+      bottom:10px; right:10px;
+      width:120px; animation: wave 2s infinite alternate;
     }
-
-    #musicBtn:hover {
-      transform: scale(1.1);
-    }
-
-    .heart {
-      position: fixed;
-      color: #ff69b4;
-      font-size: 20px;
-      animation: float 4s linear forwards;
-    }
-
-    @keyframes float {
-      0% { transform: translateY(0) scale(1); opacity: 1; }
-      100% { transform: translateY(-600px) scale(2); opacity: 0; }
+    @keyframes wave {
+      0% { transform: rotate(-5deg); }
+      100% { transform: rotate(5deg); }
     }
   </style>
 </head>
 <body>
+
+  <!-- hình Hello Kitty vẫy tay -->
+  <img class="kitty" src="https://upload.wikimedia.org/wikipedia/commons/3/30/Hello_Kitty_character.png" alt="Hello Kitty">
 
   <div class="wheel-container">
     <canvas id="wheel" width="400" height="400"></canvas>
     <div class="center-text" id="spinText">💘 Click để quay 💘</div>
     <div class="pointer"></div>
   </div>
-  <div id="result"></div>
-  <button id="musicBtn">🎵 Bật nhạc 💞</button>
 
-  <!-- Nhạc nền (MP3 thật) -->
-  <audio id="loveSong" preload="auto" loop>
-    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_0b91ad41e1.mp3?filename=romantic-love-ambient-112199.mp3" type="audio/mpeg">
-  </audio>
+  <div id="result"></div>
+
+  <!-- Nhạc nền từ YouTube -->
+  <iframe width="0" height="0"
+    src="https://www.youtube.com/embed/YeiaMdi4uiw?autoplay=1&loop=1&playlist=YeiaMdi4uiw"
+    frameborder="0" allow="autoplay; encrypted-media"></iframe>
 
   <script>
+    const gifts = ["Son", "Gấu bông", "Hoa", "Ăn lẩu", "Trang sức", "Túi xách", "Nước hoa", "Đi làm đẹp", "Quần áo"];
+    const colors = ["#ff99cc","#ffc0cb","#ffe4e1","#ffb6d2","#ff80b3","#ff6699","#ff4d88","#ff3366","#ff1a4d"];
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
+    const radius = canvas.width/2;
+    const arc = (2*Math.PI)/gifts.length;
+    const resultEl = document.getElementById("result");
     const spinText = document.getElementById("spinText");
-    const result = document.getElementById("result");
-    const audio = document.getElementById("loveSong");
-    const musicBtn = document.getElementById("musicBtn");
+    let rotation = 0;
+    let spinning=false;
 
-    const gifts = ["Son", "Gấu bông", "Hoa", "Ăn lẩu", "Trang sức", "Túi xách", "Nước hoa", "Đi chơi", "Hôn 💋"];
-    const colors = ["#ff6699", "#ffcc00", "#66cc99", "#66b3ff", "#ff9966", "#cc99ff", "#ff6666", "#99ccff", "#ffcc99"];
-
-    const radius = canvas.width / 2;
-    const arc = (2 * Math.PI) / gifts.length;
-
-    function drawWheel() {
-      for (let i = 0; i < gifts.length; i++) {
-        const angle = i * arc;
+    function drawWheel(){
+      for(let i=0;i<gifts.length;i++){
+        const angle = i*arc;
         ctx.beginPath();
-        ctx.fillStyle = colors[i % colors.length];
-        ctx.moveTo(radius, radius);
-        ctx.arc(radius, radius, radius, angle, angle + arc);
+        ctx.fillStyle = colors[i%colors.length];
+        ctx.moveTo(radius,radius);
+        ctx.arc(radius,radius,radius, angle, angle+arc);
         ctx.fill();
-
         ctx.save();
-        ctx.translate(radius, radius);
-        ctx.rotate(angle + arc / 2);
-        ctx.fillStyle = "white";
-        ctx.font = "bold 18px Arial";
-        ctx.textAlign = "right";
-        ctx.fillText(gifts[i], radius - 10, 10);
+        ctx.translate(radius,radius);
+        ctx.rotate(angle + arc/2);
+        ctx.textAlign="right";
+        ctx.fillStyle="#fff";
+        ctx.font="bold 18px Arial";
+        ctx.fillText(gifts[i], radius-10, 10);
         ctx.restore();
       }
     }
 
     drawWheel();
 
-    let spinning = false;
-    let rotation = 0;
-
-    function spin() {
-      if (spinning) return;
-      spinning = true;
-      result.innerHTML = "";
-
-      const spinAngle = 360 * 10 + Math.random() * 360;
+    spinText.addEventListener("click",()=>{
+      if(spinning) return;
+      spinning=true;
+      resultEl.innerHTML="";
+      const spinAngle = 360*8 + Math.random()*360;
       rotation += spinAngle;
-
       canvas.style.transform = `rotate(${rotation}deg)`;
 
-      setTimeout(() => {
-        const deg = rotation % 360;
-        const index = Math.floor((gifts.length - deg / 360 * gifts.length) % gifts.length);
-        result.innerHTML = `💝 Kim Dung trúng: <b>${gifts[index]}</b> 💝`;
-        createHearts();
-        spinning = false;
-      }, 8000);
-    }
-
-    spinText.addEventListener("click", spin);
-
-    musicBtn.addEventListener("click", () => {
-      if (audio.paused) {
-        audio.play().catch(() => alert("Trình duyệt đang chặn phát nhạc — hãy click lại!"));
-        musicBtn.textContent = "💞 Đang phát nhạc...";
-      } else {
-        audio.pause();
-        musicBtn.textContent = "🎵 Bật nhạc 💞";
-      }
+      setTimeout(()=>{
+        const deg = rotation%360;
+        const index = Math.floor((gifts.length - deg/360 * gifts.length) % gifts.length);
+        const gift = gifts[index];
+        resultEl.innerHTML = `💝 Chúc mừng Kim Dung! Bạn trúng <b>${gift}</b> 💝<br><span style="font-size:1.3em;">Anh yêu em hơn cả yêu 💗</span>`;
+        heartFall();
+        spinning=false;
+      },8000);
     });
 
-    function createHearts() {
-      for (let i = 0; i < 15; i++) {
-        const heart = document.createElement("div");
-        heart.classList.add("heart");
-        heart.innerHTML = "💖";
-        heart.style.left = Math.random() * window.innerWidth + "px";
-        heart.style.top = window.innerHeight + "px";
-        document.body.appendChild(heart);
-        setTimeout(() => heart.remove(), 4000);
+    function heartFall(){
+      for(let i=0;i<20;i++){
+        const h = document.createElement("div");
+        h.className="heart-fall";
+        h.style.left = Math.random()*window.innerWidth + "px";
+        document.body.appendChild(h);
+        setTimeout(()=>h.remove(),4000);
       }
     }
+
+    // thêm rơi tim nền liên tục
+    setInterval(heartFall,2000);
   </script>
 
 </body>
