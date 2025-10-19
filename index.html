@@ -1,80 +1,69 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>💞 Vòng quay tình yêu của Kim Dung 💞</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💞 Vòng quay tình yêu 💞</title>
   <style>
     body {
       margin: 0;
       font-family: "Comic Sans MS", cursive;
-      background: linear-gradient(135deg, #ffc0cb, #ffb6c1, #ffe4e1);
+      background: linear-gradient(135deg, #ffd6e0, #ffe6eb);
       overflow: hidden;
-      text-align: center;
-      color: #fff;
-    }
-
-    h1 {
-      margin-top: 50px;
-      font-size: 2.5em;
-      text-shadow: 2px 2px 5px #ff69b4;
-      animation: glow 2s ease-in-out infinite alternate;
-    }
-
-    @keyframes glow {
-      from { text-shadow: 0 0 10px #fff, 0 0 20px #ff99cc; }
-      to { text-shadow: 0 0 20px #fff, 0 0 40px #ff66b2; }
-    }
-
-    #wheel {
-      margin: 50px auto;
-      width: 350px;
-      height: 350px;
-      border-radius: 50%;
-      border: 10px solid #fff;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 0 30px #ff69b4;
-      transition: transform 7s cubic-bezier(0.33, 1, 0.68, 1);
-    }
-
-    .segment {
-      position: absolute;
-      width: 50%;
-      height: 50%;
-      background: pink;
-      transform-origin: 100% 100%;
-      clip-path: polygon(0 0, 100% 0, 0 100%);
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+    }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 10px solid white;
+      transition: transform 8s cubic-bezier(0.33, 1, 0.68, 1);
+      box-shadow: 0 0 30px #ff99cc;
+    }
+
+    .center-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       color: white;
+      font-size: 1.5em;
+      text-shadow: 0 0 10px #ff69b4;
       font-weight: bold;
-      font-size: 1.1em;
-      padding-left: 20px;
-    }
-
-    #spinBtn {
-      background: #ff69b4;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 1.2em;
-      border-radius: 50px;
+      text-align: center;
       cursor: pointer;
-      box-shadow: 0 0 15px #ffb6c1;
-      transition: transform 0.2s;
+      user-select: none;
     }
 
-    #spinBtn:hover {
-      transform: scale(1.1);
+    .pointer {
+      position: absolute;
+      right: -30px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 20px solid transparent;
+      border-bottom: 20px solid transparent;
+      border-left: 30px solid gold;
+      filter: drop-shadow(0 0 5px #ffb400);
     }
 
     #result {
       margin-top: 30px;
       font-size: 1.5em;
-      color: #fff;
-      text-shadow: 0 0 10px #ff69b4;
+      color: #ff69b4;
+      text-shadow: 0 0 10px white;
     }
 
     .heart {
@@ -91,60 +80,84 @@
   </style>
 </head>
 <body>
-  <h1>💞 Vòng quay tình yêu của Kim Dung 💞</h1>
-  <div id="wheel"></div>
-  <button id="spinBtn">💘 Quay ngay 💘</button>
+
+  <div class="wheel-container">
+    <canvas id="wheel" class="wheel" width="400" height="400"></canvas>
+    <div class="center-text" id="spinText">💘 Click để quay 💘</div>
+    <div class="pointer"></div>
+  </div>
   <div id="result"></div>
 
-  <iframe width="0" height="0"
-    src="https://www.youtube.com/embed/RDwny9uHnUM?autoplay=1&loop=1&playlist=RDwny9uHnUM"
-    frameborder="0"
-    allow="autoplay">
-  </iframe>
+  <!-- Nhạc nền (sẽ play sau khi click lần đầu) -->
+  <audio id="loveSong" src="https://docs.google.com/uc?export=open&id=1MWyAaRXAv0z0_KI1pEoRC1FofgsaG8VZ"></audio>
 
   <script>
-    const gifts = [
-      "Son", "Gấu bông", "Hoa", "Ăn lẩu",
-      "Quần áo", "Đi làm đẹp", "Trang sức",
-      "Túi xách", "Nước hoa"
-    ];
-
-    const wheel = document.getElementById("wheel");
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinText = document.getElementById("spinText");
     const result = document.getElementById("result");
-    const spinBtn = document.getElementById("spinBtn");
+    const audio = document.getElementById("loveSong");
 
-    const colors = ["#ff99cc", "#ffb6c1", "#ffc0cb", "#ffa6c9", "#ff85a2", "#ff69b4", "#ff99aa", "#ff80bf", "#ffbfd8"];
+    const gifts = ["Son", "Gấu bông", "Hoa", "Ăn lẩu", "Trang sức", "Túi xách", "Nước hoa", "Đi chơi", "Hôn 💋"];
+    const colors = ["#ff6666", "#ffcc00", "#66cc66", "#6699ff"];
 
-    gifts.forEach((gift, i) => {
-      const segment = document.createElement("div");
-      segment.classList.add("segment");
-      segment.style.background = colors[i % colors.length];
-      segment.style.transform = `rotate(${(360 / gifts.length) * i}deg)`;
-      segment.innerHTML = `<div style="transform: rotate(${180 / gifts.length}deg);">${gift}</div>`;
-      wheel.appendChild(segment);
-    });
+    const radius = canvas.width / 2;
+    const arc = (2 * Math.PI) / gifts.length;
+
+    function drawWheel() {
+      for (let i = 0; i < gifts.length; i++) {
+        const angle = i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius, angle, angle + arc, false);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "white";
+        ctx.font = "bold 18px Arial";
+        ctx.fillText(gifts[i], radius - 10, 10);
+        ctx.restore();
+      }
+    }
+
+    drawWheel();
 
     let spinning = false;
-    spinBtn.addEventListener("click", () => {
+    let rotation = 0;
+    let firstClick = true;
+
+    spinText.addEventListener("click", () => {
+      // Play nhạc sau lần click đầu tiên
+      if (firstClick) {
+        audio.play().catch(() => console.log("Tự động phát bị chặn"));
+        firstClick = false;
+      }
+
       if (spinning) return;
       spinning = true;
       result.innerHTML = "";
-      const randomDegree = 3600 + Math.floor(Math.random() * 360);
-      wheel.style.transform = `rotate(${randomDegree}deg)`;
+
+      const spin = 360 * 10 + Math.floor(Math.random() * 360);
+      rotation += spin;
+
+      canvas.style.transform = `rotate(${rotation}deg)`;
+
       setTimeout(() => {
-        const index = Math.floor(((360 - (randomDegree % 360)) / 360) * gifts.length) % gifts.length;
+        const deg = rotation % 360;
+        const index = Math.floor((gifts.length - deg / 360 * gifts.length) % gifts.length);
         const gift = gifts[index];
-        result.innerHTML = `💝 Chúc mừng Kim Dung! Bạn trúng <b>${gift}</b> 💝`;
+        result.innerHTML = `💝 Kim Dung trúng: <b>${gift}</b> 💝`;
         createHearts();
-        setTimeout(() => {
-          result.innerHTML += `<div style="margin-top:20px;font-size:1.3em;">Anh yêu em hơn cả yêu 💗</div>`;
-        }, 1500);
         spinning = false;
-      }, 7000);
+      }, 8000);
     });
 
     function createHearts() {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 15; i++) {
         const heart = document.createElement("div");
         heart.classList.add("heart");
         heart.innerHTML = "💖";
@@ -154,8 +167,6 @@
         setTimeout(() => heart.remove(), 4000);
       }
     }
-
-    setInterval(createHearts, 3000);
   </script>
 </body>
 </html>
