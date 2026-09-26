@@ -7,11 +7,7 @@ import {
 } from './services/sheetService'
 
 const navItems = [
-  { id: 'home', label: 'Trang chủ', icon: '🏠' },
-  { id: 'kidu', label: 'KiDu', icon: '💙' },
-  { id: 'medical', label: 'Lịch hẹn', icon: '🗓️' },
-  { id: 'clinic', label: 'Bệnh viện', icon: '🏥' },
-  { id: 'files', label: 'Tài liệu', icon: '📁' }
+  { id: 'clinic', label: 'Bệnh viện', icon: '🏥' }
 ]
 
 function parseDateValue(dateString) {
@@ -208,53 +204,35 @@ export default function App() {
             <p className="eyebrow">Hôm nay</p>
             <h2>{getDayName(nextAppointment?.date || '2026-09-26')}</h2>
           </div>
-          <button type="button" className="primary-btn" onClick={() => setIsCreateModalOpen(true)}>+ Tạo lịch</button>
         </header>
 
         {syncMessage && (
           <div className="sync-banner">{syncMessage}</div>
         )}
 
-        <section className="summary-grid">
-          <div className="summary-card accent">
-            <span>Buổi hẹn kế tiếp</span>
-            <strong>{nextAppointment?.label || 'KiDu'}</strong>
-            <small>
-              {formatDate(nextAppointment?.date || '2026-09-26')} • {nextAppointment?.location || 'Bệnh viện'}
-            </small>
+        <section className="calendar-shell">
+          <div className="calendar-header">
+            <div>
+              <p className="eyebrow pink">Lịch bệnh viện</p>
+              <h3>Timeline</h3>
+            </div>
           </div>
 
-          <div className="summary-card">
-            <span>Tổng số lịch</span>
-            <strong>{appointments.length}</strong>
-            <small>Đã lên lịch</small>
-          </div>
-
-          <div className="summary-card">
-            <span>Địa điểm</span>
-            <strong>{nextAppointment?.location || 'Bệnh viện'}</strong>
-            <small>Phòng khám</small>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-header">
-            <h3>Timeline</h3>
-            <button type="button" className="ghost-btn">Xem tất cả</button>
-          </div>
-
-          <div className="timeline">
+          <div className="timeline calendar-timeline">
             {timeline.map((item, index) => (
-              <div key={`${item.date}-${item.location}`} className="timeline-item">
-                <div className="timeline-dot" />
-                <div className="timeline-content">
-                  <div className="timeline-date">{getDayName(item.date)}</div>
-                  <h4>{item.label}</h4>
-                  <p>{formatDate(item.date)}</p>
-                  <span>{item.location}</span>
+              <div key={`${item.date}-${item.location}`} className={`timeline-item calendar-card ${index === 0 ? 'highlight' : ''}`}>
+                <div className="timeline-date-col">
+                  <span className="timeline-day">{getDayName(item.date)}</span>
+                  <strong>{new Date(`${item.date}T00:00:00+07:00`).getDate()}</strong>
                 </div>
-                <div className="timeline-tag">
-                  {index === 0 ? 'Sắp tới' : 'Đã đặt'}
+
+                <div className="timeline-content">
+                  <div className="timeline-meta">
+                    <span className="timeline-tag">{index === 0 ? 'Sắp tới' : 'Đã đặt'}</span>
+                    <span className="timeline-time">{formatDate(item.date)}</span>
+                  </div>
+                  <h4>{item.label}</h4>
+                  <p>{item.location}</p>
                 </div>
               </div>
             ))}
