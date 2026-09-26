@@ -165,10 +165,8 @@ export async function saveAppointmentsToSheet(url, appointments) {
 }
 
 export function getSheetApiUrl() {
-  const url = import.meta.env.VITE_SHEET_API_URL || ''
-  console.debug('[sheet-debug] env url=', url)
+  const url = 'https://script.google.com/macros/s/AKfycbwx2dnAA1g3JxFvfp4bruk_fBNSzfZ81FTjmLrplLpMS-TLfCe7VAvjrxFuaUw5cNtd/exec'
   return url
-  return import.meta.env.VITE_SHEET_API_URL || ''
 }
 
 export function ensureHeaders() {
