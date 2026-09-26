@@ -139,8 +139,9 @@ function getStatusClass(status) {
 
 function getTimelineIcon(item) {
   const label = String(item?.label || '').toLowerCase()
-  if (label.includes('trực') || label.includes('mổ') || label.includes('24h')) return '✚'
-  if (label.includes('khám') || label.includes('xét nghiệm')) return '✓'
+  if (label.includes('trực') || label.includes('24h') || label.includes('suốt')) return '🏥'
+  if (label.includes('mổ') || label.includes('phẫu thuật') || label.includes('surgery')) return '🩺'
+  if (label.includes('khám') || label.includes('nha') || label.includes('xét nghiệm')) return '🦷'
   return '📅'
 }
 
@@ -213,7 +214,7 @@ export default function App() {
       return Number.isFinite(itemDate) && itemDate >= todayTimestamp
     })
 
-    return upcoming || sortedAppointments[0] || {
+    return upcoming || {
       label: 'KiDu',
       date: todayDateValue,
       location: 'Bệnh viện'
@@ -238,7 +239,14 @@ export default function App() {
     [sortedAppointments, todayDateValue]
   )
 
-  const timeline = sortedAppointments.slice(0, 6)
+  const timeline = useMemo(
+    () => sortedAppointments.filter((item) => {
+      const itemDate = parseDateValue(item?.date)
+      const today = parseDateValue(todayDateValue)
+      return itemDate && today && itemDate >= today
+    }).slice(0, 8),
+    [sortedAppointments, todayDateValue]
+  )
 
   const resetCreateForm = () => {
     setFormData({
@@ -254,7 +262,7 @@ export default function App() {
     const dateValue = formData.date || getTodayDateValue()
     const newAppointment = {
       id: Date.now(),
-      label: formData.label.trim() || 'KiDu',
+      label: formData.label.trim() || 'Khám nha khoa',
       day: getDayName(dateValue),
       date: dateValue,
       location: formData.location.trim() || 'Bệnh viện'
@@ -332,7 +340,7 @@ export default function App() {
             <div className="next-icon">🩺</div>
 
             <div className="next-main">
-              <div className="next-label">{nextAppointment?.label || 'Phòng Khám'}</div>
+              <div className="next-label">{nextAppointment?.label || 'Khám nha khoa'}</div>
               <h2>{nextAppointment?.location || 'Bệnh viện 115'}</h2>
               <div className="next-date">{formatLongDate(nextAppointment?.date || todayDateValue)}</div>
               <div className="next-countdown">{formatCountdown(nextAppointment?.date || todayDateValue)}</div>
@@ -354,75 +362,32 @@ export default function App() {
 
         <section className="timeline-section">
           <div className="section-heading-row">
-            <h3>Lộ trình điều trị</h3>
+            <h3>Lịch trình đi bệnh viện</h3>
           </div>
 
-          <div className="care-timeline">
+          <div className="care-grid">
             {timeline.map((item) => {
               const status = getAppointmentStatus(item, todayDateValue)
               const isPast = status === 'Đã hoàn thành'
-              const isSoon = status === 'Cần chú ý' || status === 'Hôm nay'
+
+              if (isPast) return null
+
+              const isUrgent = status === 'Cần chú ý' || status === 'Hôm nay'
 
               return (
-                <div key={`${item.date}-${item.location}`} className={`timeline-item ${isPast ? 'finished' : isSoon ? 'alert' : 'upcoming'}`}>
-                  <div className="timeline-date-wrap">
-                    <span className="timeline-date">{formatShortDate(item.date)}</span>
+                <div key={`${item.date}-${item.location}`} className={`care-card ${isUrgent ? 'urgent' : ''}`}>
+                  <div className="care-card-icon">{getTimelineIcon(item)}</div>
+
+                  <div className={`care-card-pill ${getStatusClass(status)}`}>
+                    {status === 'Đã xác nhận' ? 'Đã xác nhận' : status}
                   </div>
 
-                  <div className="timeline-node">
-                    <span className="timeline-marker">{getTimelineIcon(item)}</span>
-                  </div>
-
-                  <div className="timeline-body">
-                    <div className="timeline-title-row">
-                      <h4>{item.label}</h4>
-                      <span className={`timeline-status ${getStatusClass(status)}`}>{status}</span>
-                    </div>
-                    <p>{item.location}</p>
-                  </div>
+                  <div className="care-card-title">{item.label}</div>
+                  <div className="care-card-location">{item.location}</div>
+                  <div className="care-card-date">{formatLongDate(item.date)}</div>
                 </div>
               )
             })}
-          </div>
-        </section>
-
-        <section className="list-panels">
-          <div className="mini-panel">
-            <div className="panel-header-row">
-              <h3>Sắp tới</h3>
-            </div>
-
-            <div className="entry-list">
-              {upcomingAppointments.slice(0, 4).map((item) => (
-                <button type="button" key={`${item.date}-${item.location}-up`} className="entry-item" onClick={() => setSelectedDetail(item)}>
-                  <div className="entry-date">{formatShortDate(item.date)}</div>
-                  <div className="entry-text">
-                    <strong>{item.label}</strong>
-                    <span>{item.location}</span>
-                  </div>
-                  <div className="entry-arrow">→</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mini-panel">
-            <div className="panel-header-row">
-              <h3>Đã hoàn thành</h3>
-            </div>
-
-            <div className="entry-list">
-              {completedAppointments.slice(0, 4).map((item) => (
-                <button type="button" key={`${item.date}-${item.location}-done`} className="entry-item muted" onClick={() => setSelectedDetail(item)}>
-                  <div className="entry-date">{formatShortDate(item.date)}</div>
-                  <div className="entry-text">
-                    <strong>{item.label}</strong>
-                    <span>{item.location}</span>
-                  </div>
-                  <div className="entry-arrow">→</div>
-                </button>
-              ))}
-            </div>
           </div>
         </section>
       </main>
@@ -499,7 +464,7 @@ export default function App() {
                     name="label"
                     value={formData.label}
                     onChange={(event) => setFormData((current) => ({ ...current, label: event.target.value }))}
-                    placeholder="Ví dụ: KiDu"
+                    placeholder="Ví dụ: Khám nha khoa"
                     required
                   />
                 </label>

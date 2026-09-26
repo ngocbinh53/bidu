@@ -357,84 +357,92 @@ button, input {
   font-weight: 700;
 }
 
-.care-timeline {
-  position: relative;
+.care-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.care-card {
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid #eadfe3;
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  min-height: 170px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.timeline-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: 110px 26px 1fr;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid #e8ddd9;
-  background: rgba(255, 255, 255, 0.4);
+.care-card.urgent {
+  border-color: #e9d2d9;
 }
 
-.timeline-item.finished {
-  opacity: 0.7;
-}
-
-.timeline-item.alert {
-  border-color: #efc8a2;
-  background: rgba(255, 245, 232, 0.6);
-}
-
-.timeline-item.upcoming {
-  border-color: #efc7d3;
-  background: rgba(255, 248, 250, 0.8);
-}
-
-.timeline-date-wrap {
-  color: #5b5b5b;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.timeline-node {
-  display: flex;
-  justify-content: center;
-}
-
-.timeline-marker {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+.care-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  background: #f5e5eb;
-  border: 1px solid #ebc9d7;
-  color: #a84d71;
-  font-size: 0.7rem;
-  font-weight: 800;
+  background: #f5e4eb;
+  border: 1px solid #e7d2dc;
+  font-size: 1.2rem;
 }
 
-.timeline-body {
-  min-width: 0;
-}
-
-.timeline-title-row {
-  display: flex;
+.care-card-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 4px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  background: #eeb7c8;
+  color: #8f355b;
+  line-height: 1.2;
 }
 
-.timeline-body h4 {
-  font-size: 1.02rem;
+.care-card-pill.neutral {
+  background: #e9eef4;
+  color: #4d6077;
+}
+
+.care-card-pill.success {
+  background: #d7f0df;
+  color: #1d7b49;
+}
+
+.care-card-pill.warning {
+  background: #f6dfb8;
+  color: #945f09;
+}
+
+.care-card-pill.today {
+  background: #f4d1c2;
+  color: #9b4b36;
+}
+
+.care-card-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 1.8vw, 1.7rem);
+  line-height: 1.15;
+  font-weight: 700;
   color: #1f1f1f;
 }
 
-.timeline-body p {
-  margin: 0;
-  color: #6d6d6d;
-  font-size: 0.92rem;
+.care-card-location {
+  color: #595959;
+  font-size: 0.96rem;
+  line-height: 1.4;
+}
+
+.care-card-date {
+  margin-top: auto;
+  color: #3d3d3d;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .list-panels {
