@@ -354,9 +354,7 @@ export default function App() {
                 <div key={`${item.date}-${item.location}`} className={`care-card ${isUrgent ? 'urgent' : ''}`}>
                   <div className="care-card-icon">{getTimelineIcon(item)}</div>
 
-                  <div className={`care-card-pill ${getStatusClass(status)}`}>
-                    {status === 'Đã xác nhận' ? 'Đã xác nhận' : status}
-                  </div>
+                  
 
                   <div className="care-card-title">{item.label}</div>
                   <div className="care-card-location">{item.location}</div>

@@ -245,10 +245,11 @@ button, input {
   background: #fff1f6;
   border: 1px solid #f1d3df;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.72rem;
+  padding: 5px 9px;
+  font-size: 0.62rem;
   font-weight: 700;
   margin-bottom: 8px;
+  letter-spacing: 0.01em;
 }
 
 .next-main h2 {
@@ -446,7 +447,6 @@ button, input {
 
 .care-card-title {
   margin: 0;
-  font-size: clamp(1.4rem, 1.8vw, 1.7rem);
   line-height: 1.15;
   font-weight: 700;
   color: #1f1f1f;
@@ -461,7 +461,7 @@ button, input {
 .care-card-date {
   margin-top: auto;
   color: #3d3d3d;
-  font-size: 0.95rem;
+  font-size: 14px;
   font-weight: 600;
 }
 
