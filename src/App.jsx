@@ -293,72 +293,48 @@ export default function App() {
 
   return (
     <div className="care-app">
-      <aside className="care-sidebar">
-        <div className="brand-block">
-          <div className="brand-badge">✚</div>
-          <div>
-            <p className="eyebrow">Care dashboard</p>
-            <h1>KiDu</h1>
-          </div>
-        </div>
-
-        <nav className="side-menu" aria-label="Side menu">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`menu-item ${item.id === 'clinic' ? 'active' : ''}`}
-            >
-              <span className="menu-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
-
       <main className="care-main">
         <header className="dashboard-header">
-          <div className="header-copy">
-            <h1>{formatHeaderDate(todayDateValue)}</h1>
+          <div className="brand-block">
+            <div className="brand-badge">✚</div>
+            <div className="brand-copy">
+              <p className="eyebrow">Care dashboard</p>
+              <h1>KiDu</h1>
+            </div>
           </div>
 
-          <div className="sync-status">
-            <button type="button" className="sync-button" aria-label="Đồng bộ dữ liệu">↻</button>
-            <span>Đồng bộ {syncTime} · Google Sheets</span>
-            <span className="sync-dot" aria-label="Connected" />
-          </div>
+          {/* <nav className="side-menu" aria-label="Side menu"> */}
+            {/* {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`menu-item ${item.id === 'clinic' ? 'active' : ''}`}
+              >
+                <span className="menu-icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav> */}
         </header>
 
-        {syncMessage && (
-          <div className="sync-banner">{syncMessage}</div>
-        )}
+        {/* <div className="date-row">
+          <h1>{formatHeaderDate(todayDateValue)}</h1>
+        </div>
 
         <section className="next-appointment-card">
-          <div className="section-kicker">Lần đi bệnh viện tiếp theo</div>
-
           <div className="next-appointment-content">
             <div className="next-icon">🩺</div>
 
             <div className="next-main">
               <div className="next-label">{nextAppointment?.label || 'Khám nha khoa'}</div>
               <h2>{nextAppointment?.location || 'Bệnh viện 115'}</h2>
-              <div className="next-date">{formatLongDate(nextAppointment?.date || todayDateValue)}</div>
-              <div className="next-countdown">{formatCountdown(nextAppointment?.date || todayDateValue)}</div>
-            </div>
-
-            <div className="next-meta">
-              <span className={`status-badge ${getStatusClass(getAppointmentStatus(nextAppointment, todayDateValue))}`}>
-                {getAppointmentStatus(nextAppointment, todayDateValue)}
-              </span>
+              <div className="next-meta-row only-countdown">
+                <span className="mini-tag countdown-tag">{formatCountdown(nextAppointment?.date || todayDateValue)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="next-actions">
-            <button type="button" className="action-btn primary" onClick={() => setSelectedDetail(nextAppointment)}>
-              Xem chi tiết
-            </button>
-          </div>
-        </section>
+        </section> */}
 
         <section className="timeline-section">
           <div className="section-heading-row">
@@ -385,6 +361,7 @@ export default function App() {
                   <div className="care-card-title">{item.label}</div>
                   <div className="care-card-location">{item.location}</div>
                   <div className="care-card-date">{formatLongDate(item.date)}</div>
+                  <div className="care-card-countdown">{formatCountdown(item.date)}</div>
                 </div>
               )
             })}
