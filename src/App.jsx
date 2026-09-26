@@ -1,12 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import scheduleSeed from '../data/schedule.json'
+import {
+  getSheetApiUrl,
+  loadAppointmentsFromSheet,
+  saveAppointmentsToSheet
+} from './services/sheetService'
 
 const navItems = [
-  { id: 'home', label: 'Home', icon: '🏠' },
+  { id: 'home', label: 'Trang chủ', icon: '🏠' },
   { id: 'kidu', label: 'KiDu', icon: '💙' },
   { id: 'medical', label: 'Lịch hẹn', icon: '🗓️' },
   { id: 'clinic', label: 'Bệnh viện', icon: '🏥' },
-  { id: 'saved', label: 'Đã lưu', icon: '📚' }
+  { id: 'files', label: 'Tài liệu', icon: '📁' }
 ]
 
 function formatDate(dateString) {
@@ -29,6 +34,7 @@ function getDayName(dateString) {
 }
 
 export default function App() {
+  const sheetUrl = getSheetApiUrl()
   const [appointments, setAppointments] = useState(() => {
     const saved = localStorage.getItem('myClinicScheduleData')
 
@@ -43,159 +49,159 @@ export default function App() {
       return scheduleSeed
     }
   })
+  const [syncMessage, setSyncMessage] = useState('')
+
+  useEffect(() => {
+    if (!sheetUrl) return
+
+    let isMounted = true
+
+    loadAppointmentsFromSheet(sheetUrl)
+      .then((sheetAppointments) => {
+        if (!isMounted) return
+
+        if (sheetAppointments.length) {
+          setAppointments(sheetAppointments)
+          localStorage.setItem('myClinicScheduleData', JSON.stringify(sheetAppointments))
+          setSyncMessage('Đã đồng bộ dữ liệu từ Google Sheet.')
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setSyncMessage('Chưa thể đồng bộ với Google Sheet. Đang dùng dữ liệu local.')
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [sheetUrl])
 
   const nextAppointment = useMemo(
     () => appointments[0] || scheduleSeed[0],
     [appointments]
   )
 
-  const stories = useMemo(
-    () => [
-      { name: 'Tạo tin', accent: 'creator', isAdd: true },
-      ...appointments.map((item) => ({
-        name: item.label || 'Lịch',
-        accent: item.location?.includes('Y Dược') ? 'blue' : item.location?.includes('Hoàn Mỹ') ? 'pink' : 'purple',
-        isAdd: false
-      }))
-    ],
-    [appointments]
-  )
+  const timeline = appointments.slice(0, 4)
 
-  const composerText = nextAppointment
-    ? `${nextAppointment.label} • ${formatDate(nextAppointment.date)}`
-    : 'Bạn đang nghĩ gì thế?'
+  const handleCreateAppointment = async () => {
+    const baseDate = new Date()
+    const nextDate = new Date(baseDate.getTime() + 86400000)
+    const dateValue = nextDate.toISOString().slice(0, 10)
+    const newAppointment = {
+      id: Date.now(),
+      label: 'KiDu',
+      day: 'Thứ ' + ['Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Chủ nhật'][nextDate.getDay() === 0 ? 6 : nextDate.getDay() - 1],
+      date: dateValue,
+      location: 'Bệnh viện Đa khoa Hoàn Mỹ'
+    }
+
+    const updated = [newAppointment, ...appointments]
+    setAppointments(updated)
+    localStorage.setItem('myClinicScheduleData', JSON.stringify(updated))
+
+    if (sheetUrl) {
+      try {
+        setSyncMessage('Đang ghi lên Google Sheet...')
+        await saveAppointmentsToSheet(sheetUrl, updated)
+        setSyncMessage('Đã ghi lịch mới lên Google Sheet thành công.')
+      } catch {
+        setSyncMessage('Ghi local thành công nhưng chưa đồng bộ được lên Google Sheet.')
+      }
+    }
+  }
 
   return (
-    <div className="facebook-app">
-      <header className="fb-topbar">
-        <div className="fb-topbar-left">
-          <div className="logo-mark">f</div>
-          <div className="top-mini-icons">
-            <span>◀</span>
-            <span>→</span>
-            <span>⟳</span>
+    <div className="care-app">
+      <aside className="care-sidebar">
+        <div className="brand-block">
+          <div className="brand-badge">K</div>
+          <div>
+            <p className="eyebrow">Care dashboard</p>
+            <h1>KiDu</h1>
           </div>
         </div>
 
-        <div className="fb-browser-bar">
-          <span className="browser-lock">🔒</span>
-          <span>https://www.facebook.com</span>
+        <nav className="side-menu" aria-label="Side menu">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`menu-item ${item.id === 'kidu' ? 'active' : ''}`}
+            >
+              <span className="menu-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-card">
+          <p className="small-label">Lịch tiếp theo</p>
+          <h3>{nextAppointment?.label || 'KiDu'}</h3>
+          <p>{formatDate(nextAppointment?.date || '2026-09-26')}</p>
+          <span>{nextAppointment?.location || 'Bệnh viện'}</span>
         </div>
+      </aside>
 
-        <div className="fb-topbar-right">
-          <div className="avatar-thread">N</div>
-          <button className="top-icon" type="button">⎈</button>
-          <button className="top-icon" type="button">☰</button>
-          <button className="top-icon alert" type="button">🔔</button>
-          <button className="top-icon profile" type="button">👤</button>
-        </div>
-      </header>
+      <main className="care-main">
+        <header className="main-header">
+          <div>
+            <p className="eyebrow">Hôm nay</p>
+            <h2>{getDayName(nextAppointment?.date || '2026-09-26')}</h2>
+          </div>
+          <button type="button" className="primary-btn" onClick={handleCreateAppointment}>+ Tạo lịch</button>
+        </header>
 
-      <div className="fb-main-shell">
-        <aside className="fb-left-rail">
-          <div className="user-mini-card">
-            <div className="avatar-lg">N</div>
-            <span>Nguyen Ngoc Binh</span>
+        {syncMessage && (
+          <div className="sync-banner">{syncMessage}</div>
+        )}
+
+        <section className="summary-grid">
+          <div className="summary-card accent">
+            <span>Buổi hẹn kế tiếp</span>
+            <strong>{nextAppointment?.label || 'KiDu'}</strong>
+            <small>
+              {formatDate(nextAppointment?.date || '2026-09-26')} • {nextAppointment?.location || 'Bệnh viện'}
+            </small>
           </div>
 
-          <nav className="fb-menu">
-            {navItems.map((item) => (
-              <button key={item.id} type="button" className={`rail-item ${item.id === 'home' ? 'active' : ''}`}>
-                <span className="rail-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="rail-divider" />
-
-          <div className="shortcut-list">
-            <button type="button" className="rail-item compact">
-              <span className="rail-icon">🧑‍⚕️</span>
-              <span>KiDu</span>
-            </button>
-            <button type="button" className="rail-item compact">
-              <span className="rail-icon">📍</span>
-              <span>{nextAppointment?.location || 'Bệnh viện'}</span>
-            </button>
-            <button type="button" className="rail-item compact">
-              <span className="rail-icon">🗂️</span>
-              <span>Hồ sơ bệnh án</span>
-            </button>
-          </div>
-        </aside>
-
-        <main className="fb-feed">
-          <div className="composer-box">
-            <div className="composer-row">
-              <div className="avatar-md">N</div>
-              <div className="composer-input">{composerText}</div>
-            </div>
-            <div className="composer-actions">
-              <button type="button">🎥 Video trực tiếp</button>
-              <button type="button">📷 Ảnh/video</button>
-              <button type="button">😊 Cảm xúc</button>
-            </div>
+          <div className="summary-card">
+            <span>Tổng số lịch</span>
+            <strong>{appointments.length}</strong>
+            <small>Đã lên lịch</small>
           </div>
 
-          <div className="stories-row">
-            {stories.map((story) => (
-              <div key={`${story.name}-${story.isAdd ? 'add' : 'story'}`} className={`story-card ${story.isAdd ? 'add' : ''}`}>
-                <div className={`story-ring ${story.accent}`}>
-                  {story.isAdd ? '+' : '•'}
+          <div className="summary-card">
+            <span>Địa điểm</span>
+            <strong>{nextAppointment?.location || 'Bệnh viện'}</strong>
+            <small>Phòng khám</small>
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panel-header">
+            <h3>Timeline</h3>
+            <button type="button" className="ghost-btn">Xem tất cả</button>
+          </div>
+
+          <div className="timeline">
+            {timeline.map((item, index) => (
+              <div key={`${item.date}-${item.location}`} className="timeline-item">
+                <div className="timeline-dot" />
+                <div className="timeline-content">
+                  <div className="timeline-date">{getDayName(item.date)}</div>
+                  <h4>{item.label}</h4>
+                  <p>{formatDate(item.date)}</p>
+                  <span>{item.location}</span>
                 </div>
-                <div className="story-label">{story.name}</div>
+                <div className="timeline-tag">
+                  {index === 0 ? 'Sắp tới' : 'Đã đặt'}
+                </div>
               </div>
             ))}
           </div>
-
-          <article className="post-card">
-            <div className="post-header">
-              <div className="avatar-sm brand">N</div>
-              <div className="post-meta">
-                <div className="post-author">{nextAppointment?.label || 'KiDu'}</div>
-                <div className="post-time">{getDayName(nextAppointment?.date || '2026-09-26')} · {formatDate(nextAppointment?.date || '2026-09-26')}</div>
-              </div>
-              <div className="post-menu">⋯</div>
-            </div>
-
-            <div className="post-content">
-              <p>
-                Lịch khám sắp tới: <strong>{nextAppointment?.label || 'KiDu'}</strong> vào{' '}
-                <strong>{getDayName(nextAppointment?.date || '2026-09-26')}</strong>,{' '}
-                {formatDate(nextAppointment?.date || '2026-09-26')}.{' '}
-                Địa điểm: <strong>{nextAppointment?.location || 'Bệnh viện'}</strong>.
-              </p>
-            </div>
-
-            <div className="post-visual" aria-label="Medical schedule visual">
-              <div className="promo-overlay" />
-            </div>
-          </article>
-        </main>
-
-        <aside className="fb-right-panel">
-          <div className="ads-card">
-            <div className="ads-title">Lịch tiếp theo</div>
-            <div className="ad-thumb" />
-            <div className="ad-copy">{nextAppointment?.location || 'Bệnh viện'}</div>
-          </div>
-
-          <div className="chat-card">
-            <div className="chat-header">{nextAppointment?.label || 'KiDu'}</div>
-            <div className="chat-body">
-              <div className="bubble self">{formatDate(nextAppointment?.date || '2026-09-26')}</div>
-              <div className="bubble friend">{nextAppointment?.location || 'Bệnh viện'}</div>
-            </div>
-            <div className="chat-actions">
-              <button type="button">🎙</button>
-              <button type="button">📎</button>
-              <button type="button">😊</button>
-              <button type="button" className="send-btn">♥</button>
-            </div>
-          </div>
-        </aside>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }
