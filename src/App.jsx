@@ -14,11 +14,48 @@ const navItems = [
   { id: 'files', label: 'Tài liệu', icon: '📁' }
 ]
 
+function parseDateValue(dateString) {
+  if (!dateString) return null
+
+  const text = String(dateString).trim()
+
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch
+    return new Date(`${year}-${month}-${day}T00:00:00+07:00`)
+  }
+
+  const dmyMatch = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch
+    return new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00+07:00`)
+  }
+
+  const value = new Date(text.includes('T') ? text : `${text}T00:00:00+07:00`)
+  return Number.isNaN(value.getTime()) ? null : value
+}
+
+function formatLocalDate(date) {
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+
+  const parts = formatter.formatToParts(date)
+  const year = parts.find((part) => part.type === 'year')?.value
+  const month = parts.find((part) => part.type === 'month')?.value
+  const day = parts.find((part) => part.type === 'day')?.value
+  return `${year}-${month}-${day}`
+}
+
 function formatDate(dateString) {
-  const date = new Date(dateString + 'T00:00:00')
-  if (Number.isNaN(date.getTime())) return dateString
+  const date = parseDateValue(dateString)
+  if (!date) return dateString || '—'
 
   return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
     weekday: 'long',
     day: '2-digit',
     month: '2-digit',
@@ -27,10 +64,14 @@ function formatDate(dateString) {
 }
 
 function getDayName(dateString) {
-  const date = new Date(dateString + 'T00:00:00')
-  if (Number.isNaN(date.getTime())) return 'Thứ'
+  const date = parseDateValue(dateString)
+  if (!date) return 'Thứ'
 
-  return new Intl.DateTimeFormat('vi-VN', { weekday: 'long' }).format(date)
+  const formatter = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    weekday: 'long'
+  })
+  return formatter.format(date)
 }
 
 export default function App() {
@@ -50,6 +91,12 @@ export default function App() {
     }
   })
   const [syncMessage, setSyncMessage] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    label: 'KiDu',
+    date: formatLocalDate(new Date()),
+    location: 'Bệnh viện'
+  })
 
   useEffect(() => {
     if (!sheetUrl) return
@@ -59,6 +106,8 @@ export default function App() {
     loadAppointmentsFromSheet(sheetUrl)
       .then((sheetAppointments) => {
         if (!isMounted) return
+        console.log('Loaded appointments from Google Sheet:', sheetAppointments)
+        console.log(sheetAppointments)
 
         if (sheetAppointments.length) {
           setAppointments(sheetAppointments)
@@ -84,21 +133,31 @@ export default function App() {
 
   const timeline = appointments.slice(0, 4)
 
-  const handleCreateAppointment = async () => {
-    const baseDate = new Date()
-    const nextDate = new Date(baseDate.getTime() + 86400000)
-    const dateValue = nextDate.toISOString().slice(0, 10)
+  const resetCreateForm = () => {
+    setFormData({
+      label: 'KiDu',
+      date: formatLocalDate(new Date()),
+      location: 'Bệnh viện'
+    })
+  }
+
+  const handleCreateAppointment = async (event) => {
+    event.preventDefault()
+
+    const dateValue = formData.date || formatLocalDate(new Date())
     const newAppointment = {
       id: Date.now(),
-      label: 'KiDu',
-      day: 'Thứ ' + ['Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Chủ nhật'][nextDate.getDay() === 0 ? 6 : nextDate.getDay() - 1],
+      label: formData.label.trim() || 'KiDu',
+      day: getDayName(dateValue),
       date: dateValue,
-      location: 'Bệnh viện Đa khoa Hoàn Mỹ'
+      location: formData.location.trim() || 'Bệnh viện'
     }
 
     const updated = [newAppointment, ...appointments]
     setAppointments(updated)
     localStorage.setItem('myClinicScheduleData', JSON.stringify(updated))
+    setIsCreateModalOpen(false)
+    resetCreateForm()
 
     if (sheetUrl) {
       try {
@@ -149,7 +208,7 @@ export default function App() {
             <p className="eyebrow">Hôm nay</p>
             <h2>{getDayName(nextAppointment?.date || '2026-09-26')}</h2>
           </div>
-          <button type="button" className="primary-btn" onClick={handleCreateAppointment}>+ Tạo lịch</button>
+          <button type="button" className="primary-btn" onClick={() => setIsCreateModalOpen(true)}>+ Tạo lịch</button>
         </header>
 
         {syncMessage && (
@@ -202,6 +261,70 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {isCreateModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsCreateModalOpen(false)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Tạo lịch mới</p>
+                <h3>Thêm lịch hẹn</h3>
+              </div>
+              <button type="button" className="icon-close" onClick={() => setIsCreateModalOpen(false)} aria-label="Đóng popup">
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAppointment} className="create-form">
+              <div className="form-grid">
+                <label className="field-group">
+                  <span>Ngày</span>
+                  <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={(event) => setFormData((current) => ({ ...current, date: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="field-group">
+                  <span>Loại lịch</span>
+                  <input
+                    type="text"
+                    name="label"
+                    value={formData.label}
+                    onChange={(event) => setFormData((current) => ({ ...current, label: event.target.value }))}
+                    placeholder="Ví dụ: KiDu"
+                    required
+                  />
+                </label>
+
+                <label className="field-group full-width">
+                  <span>Địa điểm</span>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={(event) => setFormData((current) => ({ ...current, location: event.target.value }))}
+                    placeholder="Ví dụ: Bệnh viện 115"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="ghost-btn" onClick={() => setIsCreateModalOpen(false)}>
+                  Hủy
+                </button>
+                <button type="submit" className="primary-btn">
+                  Lưu lịch
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

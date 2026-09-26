@@ -1,6 +1,6 @@
 const SHEET_ID = '1VyR4JnFhwLnS_R0HqgZh4GibAHpFB25KnqLwtWtAKq8';
 const SHEET_NAME = 'Sheet1';
-const DEFAULT_HEADERS = ['label', 'day', 'date', 'location', 'createdAt'];
+const DEFAULT_HEADERS = ['Date', 'Position', 'Location'];
 
 function getSheet() {
   const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
@@ -28,12 +28,9 @@ function normalizeRow(rawRow) {
   });
 
   return {
-    id: `${item.date || 'date'}-${item.location || 'location'}-${Date.now()}`,
-    label: item.label || 'KiDu',
-    day: item.day || 'Thứ',
-    date: item.date || new Date().toISOString().slice(0, 10),
-    location: item.location || 'Bệnh viện',
-    createdAt: item.createdAt || new Date().toISOString()
+    Date: item.Date || new Date().toISOString().slice(0, 10),
+    Position: item.Position || 'KiDu',
+    Location: item.Location || 'Bệnh viện'
   };
 }
 
@@ -50,14 +47,16 @@ function doGet() {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    const headers = values[0];
+    const headers = values[0].map((header) => header && String(header).trim());
     const rows = values.slice(1).map((row) => {
       const item = {};
       headers.forEach((header, index) => {
-        item[header] = row[index] || '';
+        if (header) {
+          item[header] = row[index] || '';
+        }
       });
       return item;
-    }).filter((row) => row.label || row.date || row.location);
+    }).filter((row) => row.Date || row.Position || row.Location);
 
     return ContentService
       .createTextOutput(JSON.stringify(rows))
@@ -78,19 +77,15 @@ function doPost(e) {
 
     const rows = items.map((item) => {
       const normalized = normalizeRow([
-        item.label || '',
-        item.day || '',
-        item.date || '',
-        item.location || '',
-        new Date().toISOString()
+        item.Date || item.date || '',
+        item.Position || item.position || item.label || '',
+        item.Location || item.location || ''
       ]);
 
       return [
-        normalized.label,
-        normalized.day,
-        normalized.date,
-        normalized.location,
-        normalized.createdAt
+        normalized.Date,
+        normalized.Position,
+        normalized.Location
       ];
     });
 

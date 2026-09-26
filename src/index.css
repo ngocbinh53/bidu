@@ -184,17 +184,6 @@ button {
   transition: transform 0.2s ease;
 }
 
-.sync-banner {
-  background: #edf5ff;
-  color: #1d4ed8;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 18px;
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
 .primary-btn {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
@@ -339,6 +328,114 @@ button {
   padding: 7px 10px;
 }
 
+.sync-banner {
+  background: #edf5ff;
+  color: #1d4ed8;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1200;
+}
+
+.modal-card {
+  width: min(100%, 520px);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1f2a37;
+  font-size: 1.4rem;
+}
+
+.icon-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #42506b;
+  font-weight: 600;
+}
+
+.field-group span {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #61729a;
+}
+
+.field-group input {
+  width: 100%;
+  border: 1px solid #dfe7f5;
+  border-radius: 12px;
+  background: #f9fbff;
+  padding: 12px 14px;
+  font: inherit;
+  color: #1f2937;
+}
+
+.field-group input:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.15);
+  border-color: #87aefc;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 @media (max-width: 900px) {
   .care-app {
     flex-direction: column;
@@ -363,10 +460,6 @@ button {
   .main-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .side-menu {
-    grid-template-columns: 1fr;
   }
 
   .timeline-item {
