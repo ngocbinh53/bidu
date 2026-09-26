@@ -14,7 +14,6 @@ function parseDateValue(dateString) {
   if (!dateString) return null
 
   const text = String(dateString).trim()
-
   const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (isoMatch) {
     const [, year, month, day] = isoMatch
@@ -46,13 +45,49 @@ function formatLocalDate(date) {
   return `${year}-${month}-${day}`
 }
 
-function formatDate(dateString) {
+function getTodayDateValue() {
+  return formatLocalDate(new Date())
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Chào buổi sáng'
+  if (hour < 18) return 'Chào buổi chiều'
+  return 'Chào buổi tối'
+}
+
+function formatHeaderDate(dateString) {
   const date = parseDateValue(dateString)
-  if (!date) return dateString || '—'
+  if (!date) return '—'
 
   return new Intl.DateTimeFormat('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
     weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date)
+}
+
+function formatLongDate(dateString) {
+  const date = parseDateValue(dateString)
+  if (!date) return '—'
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date)
+}
+
+function formatShortDate(dateString) {
+  const date = parseDateValue(dateString)
+  if (!date) return '—'
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -70,8 +105,48 @@ function getDayName(dateString) {
   return formatter.format(date)
 }
 
+function formatCountdown(dateString) {
+  const targetDate = parseDateValue(dateString)
+  if (!targetDate) return 'Chưa có lịch'
+
+  const today = new Date(`${getTodayDateValue()}T00:00:00+07:00`)
+  const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / 86400000)
+
+  if (diffDays === 0) return 'Hôm nay'
+  if (diffDays > 0) return `Còn ${diffDays} ngày`
+  return `${Math.abs(diffDays)} ngày trước`
+}
+
+function getAppointmentStatus(item, todayDateValue) {
+  const date = parseDateValue(item?.date)
+  if (!date) return 'Cần chú ý'
+
+  const today = parseDateValue(todayDateValue)
+  if (date < today) return 'Đã hoàn thành'
+  if (date.getTime() === today.getTime()) return 'Hôm nay'
+
+  const label = String(item?.label || '').toLowerCase()
+  if (label.includes('trực') || label.includes('mổ') || label.includes('24h')) return 'Cần chú ý'
+  return 'Đã xác nhận'
+}
+
+function getStatusClass(status) {
+  if (status === 'Đã hoàn thành') return 'success'
+  if (status === 'Cần chú ý') return 'warning'
+  if (status === 'Hôm nay') return 'today'
+  return 'neutral'
+}
+
+function getTimelineIcon(item) {
+  const label = String(item?.label || '').toLowerCase()
+  if (label.includes('trực') || label.includes('mổ') || label.includes('24h')) return '•'
+  if (label.includes('khám') || label.includes('xét nghiệm')) return '✓'
+  return '●'
+}
+
 export default function App() {
   const sheetUrl = getSheetApiUrl()
+  const todayDateValue = useMemo(() => getTodayDateValue(), [])
   const [appointments, setAppointments] = useState(() => {
     const saved = localStorage.getItem('myClinicScheduleData')
 
@@ -88,9 +163,10 @@ export default function App() {
   })
   const [syncMessage, setSyncMessage] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [selectedDetail, setSelectedDetail] = useState(null)
   const [formData, setFormData] = useState({
     label: 'KiDu',
-    date: formatLocalDate(new Date()),
+    date: getTodayDateValue(),
     location: 'Bệnh viện'
   })
 
@@ -102,8 +178,6 @@ export default function App() {
     loadAppointmentsFromSheet(sheetUrl)
       .then((sheetAppointments) => {
         if (!isMounted) return
-        console.log('Loaded appointments from Google Sheet:', sheetAppointments)
-        console.log(sheetAppointments)
 
         if (sheetAppointments.length) {
           setAppointments(sheetAppointments)
@@ -122,17 +196,54 @@ export default function App() {
     }
   }, [sheetUrl])
 
-  const nextAppointment = useMemo(
-    () => appointments[0] || scheduleSeed[0],
+  const sortedAppointments = useMemo(
+    () => [...appointments].sort((first, second) => {
+      const firstDate = parseDateValue(first?.date)?.getTime() ?? Number.MAX_SAFE_INTEGER
+      const secondDate = parseDateValue(second?.date)?.getTime() ?? Number.MAX_SAFE_INTEGER
+      return firstDate - secondDate
+    }),
     [appointments]
   )
 
-  const timeline = appointments.slice(0, 4)
+  const nextAppointment = useMemo(() => {
+    const todayTimestamp = parseDateValue(todayDateValue)?.getTime() ?? Date.now()
+
+    const upcoming = sortedAppointments.find((item) => {
+      const itemDate = parseDateValue(item?.date)?.getTime()
+      return Number.isFinite(itemDate) && itemDate >= todayTimestamp
+    })
+
+    return upcoming || sortedAppointments[0] || {
+      label: 'KiDu',
+      date: todayDateValue,
+      location: 'Bệnh viện'
+    }
+  }, [sortedAppointments, todayDateValue])
+
+  const upcomingAppointments = useMemo(
+    () => sortedAppointments.filter((item) => {
+      const itemDate = parseDateValue(item?.date)
+      const today = parseDateValue(todayDateValue)
+      return itemDate && today && itemDate >= today
+    }),
+    [sortedAppointments, todayDateValue]
+  )
+
+  const completedAppointments = useMemo(
+    () => [...sortedAppointments].filter((item) => {
+      const itemDate = parseDateValue(item?.date)
+      const today = parseDateValue(todayDateValue)
+      return itemDate && today && itemDate < today
+    }).reverse(),
+    [sortedAppointments, todayDateValue]
+  )
+
+  const timeline = sortedAppointments.slice(0, 6)
 
   const resetCreateForm = () => {
     setFormData({
       label: 'KiDu',
-      date: formatLocalDate(new Date()),
+      date: getTodayDateValue(),
       location: 'Bệnh viện'
     })
   }
@@ -140,7 +251,7 @@ export default function App() {
   const handleCreateAppointment = async (event) => {
     event.preventDefault()
 
-    const dateValue = formData.date || formatLocalDate(new Date())
+    const dateValue = formData.date || getTodayDateValue()
     const newAppointment = {
       id: Date.now(),
       label: formData.label.trim() || 'KiDu',
@@ -166,6 +277,12 @@ export default function App() {
     }
   }
 
+  const syncTime = new Date().toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+
   return (
     <div className="care-app">
       <aside className="care-sidebar">
@@ -182,27 +299,26 @@ export default function App() {
             <button
               key={item.id}
               type="button"
-              className={`menu-item ${item.id === 'kidu' ? 'active' : ''}`}
+              className={`menu-item ${item.id === 'clinic' ? 'active' : ''}`}
             >
               <span className="menu-icon">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
-
-        <div className="sidebar-card">
-          <p className="small-label">Lịch tiếp theo</p>
-          <h3>{nextAppointment?.label || 'KiDu'}</h3>
-          <p>{formatDate(nextAppointment?.date || '2026-09-26')}</p>
-          <span>{nextAppointment?.location || 'Bệnh viện'}</span>
-        </div>
       </aside>
 
       <main className="care-main">
-        <header className="main-header">
-          <div>
-            <p className="eyebrow">Hôm nay</p>
-            <h2>{getDayName(nextAppointment?.date || '2026-09-26')}</h2>
+        <header className="dashboard-header">
+          <div className="header-copy">
+            <div className="header-greeting">{getGreeting()}, Bình 👋</div>
+            <h1>{formatHeaderDate(todayDateValue)}</h1>
+          </div>
+
+          <div className="sync-status">
+            <button type="button" className="sync-button" aria-label="Đồng bộ dữ liệu">↻</button>
+            <span>Đồng bộ {syncTime} · Google Sheets</span>
+            <span className="sync-dot" aria-label="Connected" />
           </div>
         </header>
 
@@ -210,35 +326,146 @@ export default function App() {
           <div className="sync-banner">{syncMessage}</div>
         )}
 
-        <section className="calendar-shell">
-          <div className="calendar-header">
-            <div>
-              <p className="eyebrow pink">Lịch bệnh viện</p>
-              <h3>Timeline</h3>
+        <section className="next-appointment-card">
+          <div className="section-kicker">Lần đi bệnh viện tiếp theo</div>
+
+          <div className="next-appointment-content">
+            <div className="next-icon">🏥</div>
+
+            <div className="next-main">
+              <div className="next-label">{nextAppointment?.label || 'Phòng Khám'}</div>
+              <h2>{nextAppointment?.location || 'Bệnh viện 115'}</h2>
+              <div className="next-date">{formatLongDate(nextAppointment?.date || todayDateValue)}</div>
+              <div className="next-countdown">{formatCountdown(nextAppointment?.date || todayDateValue)}</div>
+            </div>
+
+            <div className="next-meta">
+              <span className={`status-badge ${getStatusClass(getAppointmentStatus(nextAppointment, todayDateValue))}`}>
+                {getAppointmentStatus(nextAppointment, todayDateValue)}
+              </span>
             </div>
           </div>
 
-          <div className="timeline calendar-timeline">
-            {timeline.map((item, index) => (
-              <div key={`${item.date}-${item.location}`} className={`timeline-item calendar-card ${index === 0 ? 'highlight' : ''}`}>
-                <div className="timeline-date-col">
-                  <span className="timeline-day">{getDayName(item.date)}</span>
-                  <strong>{new Date(`${item.date}T00:00:00+07:00`).getDate()}</strong>
-                </div>
+          <div className="next-actions">
+            <button type="button" className="action-btn primary" onClick={() => setSelectedDetail(nextAppointment)}>
+              Xem chi tiết
+            </button>
+          </div>
+        </section>
 
-                <div className="timeline-content">
-                  <div className="timeline-meta">
-                    <span className="timeline-tag">{index === 0 ? 'Sắp tới' : 'Đã đặt'}</span>
-                    <span className="timeline-time">{formatDate(item.date)}</span>
+        <section className="timeline-section">
+          <div className="section-heading-row">
+            <h3>Lộ trình điều trị</h3>
+          </div>
+
+          <div className="care-timeline">
+            {timeline.map((item) => {
+              const status = getAppointmentStatus(item, todayDateValue)
+              const isPast = status === 'Đã hoàn thành'
+              const isSoon = status === 'Cần chú ý' || status === 'Hôm nay'
+
+              return (
+                <div key={`${item.date}-${item.location}`} className={`timeline-item ${isPast ? 'finished' : isSoon ? 'alert' : 'upcoming'}`}>
+                  <div className="timeline-date-wrap">
+                    <span className="timeline-date">{formatShortDate(item.date)}</span>
                   </div>
-                  <h4>{item.label}</h4>
-                  <p>{item.location}</p>
+
+                  <div className="timeline-node">
+                    <span className="timeline-marker">{getTimelineIcon(item)}</span>
+                  </div>
+
+                  <div className="timeline-body">
+                    <div className="timeline-title-row">
+                      <h4>{item.label}</h4>
+                      <span className={`timeline-status ${getStatusClass(status)}`}>{status}</span>
+                    </div>
+                    <p>{item.location}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="list-panels">
+          <div className="mini-panel">
+            <div className="panel-header-row">
+              <h3>Sắp tới</h3>
+            </div>
+
+            <div className="entry-list">
+              {upcomingAppointments.slice(0, 4).map((item) => (
+                <button type="button" key={`${item.date}-${item.location}-up`} className="entry-item" onClick={() => setSelectedDetail(item)}>
+                  <div className="entry-date">{formatShortDate(item.date)}</div>
+                  <div className="entry-text">
+                    <strong>{item.label}</strong>
+                    <span>{item.location}</span>
+                  </div>
+                  <div className="entry-arrow">→</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mini-panel">
+            <div className="panel-header-row">
+              <h3>Đã hoàn thành</h3>
+            </div>
+
+            <div className="entry-list">
+              {completedAppointments.slice(0, 4).map((item) => (
+                <button type="button" key={`${item.date}-${item.location}-done`} className="entry-item muted" onClick={() => setSelectedDetail(item)}>
+                  <div className="entry-date">{formatShortDate(item.date)}</div>
+                  <div className="entry-text">
+                    <strong>{item.label}</strong>
+                    <span>{item.location}</span>
+                  </div>
+                  <div className="entry-arrow">→</div>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       </main>
+
+      {selectedDetail && (
+        <div className="modal-backdrop" onClick={() => setSelectedDetail(null)}>
+          <div className="modal-card detail-card" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Chi tiết lịch</p>
+                <h3>{selectedDetail.label}</h3>
+              </div>
+              <button type="button" className="icon-close" onClick={() => setSelectedDetail(null)}>×</button>
+            </div>
+
+            <div className="detail-body">
+              <div className="detail-row">
+                <span>Bệnh viện</span>
+                <strong>{selectedDetail.location}</strong>
+              </div>
+              <div className="detail-row">
+                <span>Ngày</span>
+                <strong>{formatLongDate(selectedDetail.date)}</strong>
+              </div>
+              <div className="detail-row">
+                <span>Trạng thái</span>
+                <strong className={`detail-status ${getStatusClass(getAppointmentStatus(selectedDetail, todayDateValue))}`}>
+                  {getAppointmentStatus(selectedDetail, todayDateValue)}
+                </strong>
+              </div>
+              <div className="detail-row">
+                <span>Countdown</span>
+                <strong>{formatCountdown(selectedDetail.date)}</strong>
+              </div>
+            </div>
+
+            <div className="modal-actions detail-actions">
+              <button type="button" className="primary-btn" onClick={() => setSelectedDetail(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isCreateModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsCreateModalOpen(false)}>
