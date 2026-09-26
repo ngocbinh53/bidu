@@ -7,7 +7,7 @@ import {
 } from './services/sheetService'
 
 const navItems = [
-  { id: 'clinic', label: 'Bệnh viện', icon: '🏥' }
+  { id: 'clinic', label: 'Bệnh viện', icon: '🩺' }
 ]
 
 function parseDateValue(dateString) {
@@ -139,9 +139,9 @@ function getStatusClass(status) {
 
 function getTimelineIcon(item) {
   const label = String(item?.label || '').toLowerCase()
-  if (label.includes('trực') || label.includes('mổ') || label.includes('24h')) return '•'
+  if (label.includes('trực') || label.includes('mổ') || label.includes('24h')) return '✚'
   if (label.includes('khám') || label.includes('xét nghiệm')) return '✓'
-  return '●'
+  return '📅'
 }
 
 export default function App() {
@@ -287,7 +287,7 @@ export default function App() {
     <div className="care-app">
       <aside className="care-sidebar">
         <div className="brand-block">
-          <div className="brand-badge">K</div>
+          <div className="brand-badge">✚</div>
           <div>
             <p className="eyebrow">Care dashboard</p>
             <h1>KiDu</h1>
@@ -311,7 +311,6 @@ export default function App() {
       <main className="care-main">
         <header className="dashboard-header">
           <div className="header-copy">
-            <div className="header-greeting">{getGreeting()}, Bình 👋</div>
             <h1>{formatHeaderDate(todayDateValue)}</h1>
           </div>
 
@@ -330,7 +329,7 @@ export default function App() {
           <div className="section-kicker">Lần đi bệnh viện tiếp theo</div>
 
           <div className="next-appointment-content">
-            <div className="next-icon">🏥</div>
+            <div className="next-icon">🩺</div>
 
             <div className="next-main">
               <div className="next-label">{nextAppointment?.label || 'Phòng Khám'}</div>
