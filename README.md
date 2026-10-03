@@ -10,6 +10,7 @@ Một dự án HTML/CSS/JS tĩnh với 2 tab:
 - Hiển thị ngày, thứ, năm và địa điểm
 - Label mặc định: `Đi bệnh viện`
 - Dữ liệu lưu trong `localStorage` để có hiệu ứng "database" đơn giản trên frontend
+- Trang `/food` tự chọn ngẫu nhiên món ăn sáng và tối, có thể chọn lại ngẫu nhiên hoặc tự chọn từ danh sách; dữ liệu món ăn nằm riêng tại `src/data/foodOptions.js`, sẵn sàng để chuyển sang nguồn API
 
 ## Chạy local
 
@@ -23,6 +24,8 @@ Mở trong trình duyệt:
 ```text
 http://localhost:8000
 ```
+
+Trang chọn món ăn: `http://localhost:8000/food`
 
 ## Deploy lên GitHub Pages
 

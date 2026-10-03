@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import scheduleSeed from '../data/schedule.json'
+import { foodOptions } from './data/foodOptions'
 import {
   getSheetApiUrl,
   loadAppointmentsFromSheet,
@@ -9,6 +10,11 @@ import {
 const navItems = [
   { id: 'clinic', label: 'Bệnh viện', icon: '🩺' }
 ]
+
+function pickRandomFood(meal, currentSelection = '') {
+  const availableFoods = foodOptions[meal].filter((food) => food !== currentSelection)
+  return availableFoods[Math.floor(Math.random() * availableFoods.length)]
+}
 
 function parseDateValue(dateString) {
   if (!dateString) return null
@@ -145,7 +151,7 @@ function getTimelineIcon(item) {
   return '📅'
 }
 
-export default function App() {
+function ClinicApp() {
   const sheetUrl = getSheetApiUrl()
   const todayDateValue = useMemo(() => getTodayDateValue(), [])
   const [appointments, setAppointments] = useState(() => {
@@ -302,6 +308,9 @@ export default function App() {
               <h1>KiDu</h1>
             </div>
           </div>
+          <a className="food-nav-link" href={`${import.meta.env.BASE_URL}food`}>
+            🍽️ Chọn món
+          </a>
 
           {/* <nav className="side-menu" aria-label="Side menu"> */}
             {/* {navItems.map((item) => (
@@ -471,4 +480,129 @@ export default function App() {
       )}
     </div>
   )
+}
+
+function FoodPage() {
+  const [selections, setSelections] = useState(() => ({
+    breakfast: pickRandomFood('breakfast'),
+    dinner: pickRandomFood('dinner')
+  }))
+  const [rollingMeals, setRollingMeals] = useState({ breakfast: false, dinner: false })
+  const rollTimers = useRef({})
+
+  const rollMeal = useCallback((meal) => {
+    const previousTimers = rollTimers.current[meal]
+    if (previousTimers) {
+      clearInterval(previousTimers.interval)
+      clearTimeout(previousTimers.timeout)
+    }
+
+    setRollingMeals((current) => ({ ...current, [meal]: true }))
+    const interval = setInterval(() => {
+      setSelections((current) => ({ ...current, [meal]: pickRandomFood(meal) }))
+    }, 100)
+    const timeout = setTimeout(() => {
+      clearInterval(interval)
+      setSelections((current) => ({
+        ...current,
+        [meal]: pickRandomFood(meal, current[meal])
+      }))
+      setRollingMeals((current) => ({ ...current, [meal]: false }))
+      delete rollTimers.current[meal]
+    }, 3000)
+
+    rollTimers.current[meal] = { interval, timeout }
+  }, [])
+
+  useEffect(() => {
+    document.title = 'Chọn món | KiDu'
+    rollMeal('breakfast')
+    rollMeal('dinner')
+
+    return () => {
+      Object.values(rollTimers.current).forEach(({ interval, timeout }) => {
+        clearInterval(interval)
+        clearTimeout(timeout)
+      })
+    }
+  }, [rollMeal])
+
+  const renderMealOptions = (meal, title, icon, description) => (
+    <section className="food-meal-card" aria-labelledby={`${meal}-heading`} aria-busy={rollingMeals[meal]}>
+      <div className="food-meal-heading">
+        <span className="food-meal-icon" aria-hidden="true">{icon}</span>
+        <div>
+          <p className="eyebrow">{description}</p>
+          <h2 id={`${meal}-heading`}>{title}</h2>
+        </div>
+        <button
+          type="button"
+          className={`food-reroll-btn ${rollingMeals[meal] ? 'rolling' : ''}`}
+          onClick={() => rollMeal(meal)}
+          aria-label={`Chọn lại món ${title.toLowerCase()}`}
+          title={`Chọn lại món ${title.toLowerCase()}`}
+          disabled={rollingMeals[meal]}
+        >
+          ↻
+        </button>
+      </div>
+
+      <div className="food-options">
+        {foodOptions[meal].map((food) => (
+          <button
+            key={food}
+            type="button"
+            className={`food-choice ${selections[meal] === food ? 'selected' : ''} ${selections[meal] === food && rollingMeals[meal] ? 'rolling' : ''}`}
+            aria-pressed={selections[meal] === food}
+            onClick={() => setSelections((current) => ({ ...current, [meal]: food }))}
+            disabled={rollingMeals[meal]}
+          >
+            <span>{food}</span>
+            {selections[meal] === food && <span aria-hidden="true">✓</span>}
+          </button>
+        ))}
+      </div>
+
+      <p className="food-picked" aria-live="polite">
+        {rollingMeals[meal]
+          ? 'Đang chọn món...'
+          : selections[meal] ? <>Đã chọn: <strong>{selections[meal]}</strong></> : 'Chọn một món trong danh sách nhé.'}
+      </p>
+    </section>
+  )
+
+  return (
+    <div className="food-app">
+      <main className="food-main">
+        <header className="food-header">
+          <a className="food-brand" href={import.meta.env.BASE_URL} aria-label="Về trang chủ KiDu">
+            <span className="food-brand-badge" aria-hidden="true">✦</span>
+            <span>KiDu</span>
+          </a>
+          <a className="food-back-link" href={import.meta.env.BASE_URL}>Lịch bệnh viện <span aria-hidden="true">↗</span></a>
+        </header>
+
+        <section className="food-intro">
+          <p className="eyebrow">Gợi ý thực đơn</p>
+          <h1>Hôm nay ăn gì?</h1>
+          <p>Chọn một món ăn sáng và một món ăn tối từ danh sách có sẵn.</p>
+        </section>
+
+        <div className="food-meals">
+          {renderMealOptions('breakfast', 'Bữa sáng', '🌤️', 'Bắt đầu ngày mới')}
+          {renderMealOptions('dinner', 'Bữa tối', '🌙', 'Khép lại một ngày')}
+        </div>
+
+        <footer className="food-footer">
+          Nhấn biểu tượng ↻ cạnh tiêu đề để chọn lại món.
+        </footer>
+      </main>
+    </div>
+  )
+}
+
+export default function App() {
+  return window.location.pathname.replace(/\/+$/, '').endsWith('/food')
+    ? <FoodPage />
+    : <ClinicApp />
 }
