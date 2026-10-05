@@ -602,6 +602,15 @@ function FoodPage() {
 }
 
 export default function App() {
+  if (window.location.search.startsWith('?/')) {
+    const [routePath] = window.location.search.slice(2).split('&')
+    window.history.replaceState(
+      null,
+      '',
+      `${import.meta.env.BASE_URL}${routePath.replace(/~and~/g, '&')}${window.location.hash}`
+    )
+  }
+
   return window.location.pathname.replace(/\/+$/, '').endsWith('/food')
     ? <FoodPage />
     : <ClinicApp />
