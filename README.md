@@ -10,7 +10,7 @@ Một dự án HTML/CSS/JS tĩnh với 2 tab:
 - Hiển thị ngày, thứ, năm và địa điểm
 - Label mặc định: `Đi bệnh viện`
 - Dữ liệu lưu trong `localStorage` để có hiệu ứng "database" đơn giản trên frontend
-- Trang `/food` tự chọn ngẫu nhiên món ăn sáng và tối, có thể chọn lại ngẫu nhiên hoặc tự chọn từ danh sách; dữ liệu món ăn nằm riêng tại `src/data/foodOptions.js`, sẵn sàng để chuyển sang nguồn API
+- Trang `/food` tải danh sách món ăn sáng và tối từ Google Sheet, đồng thời vẫn có danh sách mặc định trong `src/data/foodOptions.js` nếu API không khả dụng
 
 ## Chạy local
 
@@ -26,6 +26,19 @@ http://localhost:8000
 ```
 
 Trang chọn món ăn: `http://localhost:8000/food`
+
+## Cấu hình danh sách món ăn
+
+Trong cùng Google Spreadsheet, tab `Work` lưu lịch bệnh viện. Tab `food` lưu thực đơn theo cấu trúc:
+
+| Breakfast | Dinner |
+| --- | --- |
+| Phở | Cơm tấm |
+| Bánh mì | Hủ tiếu |
+
+Mỗi món ăn nằm ở một ô bên dưới tiêu đề tương ứng; có thể thêm bao nhiêu hàng tùy ý. Google Apps Script cung cấp dữ liệu qua `GET <URL_API>?action=food`, trả về JSON dạng `{ "breakfast": ["Phở", "Bánh mì"], "dinner": ["Cơm tấm", "Hủ tiếu"] }`.
+
+Sau khi cập nhật `google-apps-script/Code.gs`, hãy deploy phiên bản mới của Apps Script Web App để endpoint hiện tại đọc đúng hai tab và nhận route `action=food`.
 
 ## Deploy lên GitHub Pages
 

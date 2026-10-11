@@ -1,5 +1,6 @@
 const SHEET_ID = '1VyR4JnFhwLnS_R0HqgZh4GibAHpFB25KnqLwtWtAKq8';
-const SHEET_NAME = 'Sheet1';
+const SHEET_NAME = 'Work';
+const FOOD_SHEET_NAME = 'food';
 const DEFAULT_HEADERS = ['Date', 'Position', 'Location'];
 
 function getSheet() {
@@ -34,8 +35,41 @@ function normalizeRow(rawRow) {
   };
 }
 
-function doGet() {
+function getFoodMenu() {
+  const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = spreadsheet.getSheetByName(FOOD_SHEET_NAME);
+
+  if (!sheet) {
+    throw new Error(`Không tìm thấy tab "${FOOD_SHEET_NAME}"`);
+  }
+
+  const values = sheet.getDataRange().getValues();
+  const headers = (values[0] || []).map((header) => String(header).trim().toLowerCase());
+  const breakfastIndex = headers.indexOf('breakfast');
+  const dinnerIndex = headers.indexOf('dinner');
+
+  if (breakfastIndex === -1 || dinnerIndex === -1) {
+    throw new Error('Tab Food cần có hai cột tiêu đề Breakfast và Dinner');
+  }
+
+  const getFoods = (columnIndex) => values.slice(1)
+    .map((row) => String(row[columnIndex] ?? '').trim())
+    .filter(Boolean);
+
+  return {
+    breakfast: getFoods(breakfastIndex),
+    dinner: getFoods(dinnerIndex)
+  };
+}
+
+function doGet(e) {
   try {
+    if (e && e.parameter && e.parameter.action === 'food') {
+      return ContentService
+        .createTextOutput(JSON.stringify(getFoodMenu()))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const sheet = getSheet();
     ensureHeaders(sheet);
 

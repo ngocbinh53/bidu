@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import scheduleSeed from '../data/schedule.json'
-import { foodOptions } from './data/foodOptions'
+import { foodOptions as defaultFoodOptions } from './data/foodOptions'
 import {
   getSheetApiUrl,
   loadAppointmentsFromSheet,
+  loadFoodOptionsFromSheet,
   saveAppointmentsToSheet
 } from './services/sheetService'
 
@@ -11,9 +12,11 @@ const navItems = [
   { id: 'clinic', label: 'Bệnh viện', icon: '🩺' }
 ]
 
-function pickRandomFood(meal, currentSelection = '') {
-  const availableFoods = foodOptions[meal].filter((food) => food !== currentSelection)
-  return availableFoods[Math.floor(Math.random() * availableFoods.length)]
+function pickRandomFood(meal, currentSelection = '', options = defaultFoodOptions) {
+  const mealOptions = options[meal] || []
+  const availableFoods = mealOptions.filter((food) => food !== currentSelection)
+  const choices = availableFoods.length ? availableFoods : mealOptions
+  return choices[Math.floor(Math.random() * choices.length)] || ''
 }
 
 function parseDateValue(dateString) {
@@ -245,15 +248,6 @@ function ClinicApp() {
     [sortedAppointments, todayDateValue]
   )
 
-  const timeline = useMemo(
-    () => sortedAppointments.filter((item) => {
-      const itemDate = parseDateValue(item?.date)
-      const today = parseDateValue(todayDateValue)
-      return itemDate && today && itemDate >= today
-    }).slice(0, 8),
-    [sortedAppointments, todayDateValue]
-  )
-
   const resetCreateForm = () => {
     setFormData({
       label: 'KiDu',
@@ -351,7 +345,7 @@ function ClinicApp() {
           </div>
 
           <div className="care-grid">
-            {timeline.map((item) => {
+            {upcomingAppointments.map((item) => {
               const status = getAppointmentStatus(item, todayDateValue)
               const isPast = status === 'Đã hoàn thành'
 
@@ -483,12 +477,50 @@ function ClinicApp() {
 }
 
 function FoodPage() {
+  const sheetUrl = getSheetApiUrl()
+  const [foodOptions, setFoodOptions] = useState(defaultFoodOptions)
   const [selections, setSelections] = useState(() => ({
     breakfast: pickRandomFood('breakfast'),
     dinner: pickRandomFood('dinner')
   }))
+  const [foodSyncMessage, setFoodSyncMessage] = useState('Đang tải thực đơn từ Google Sheet...')
   const [rollingMeals, setRollingMeals] = useState({ breakfast: false, dinner: false })
   const rollTimers = useRef({})
+
+  useEffect(() => {
+    if (!sheetUrl) {
+      setFoodSyncMessage('Đang dùng danh sách món mặc định.')
+      return
+    }
+
+    let isMounted = true
+
+    loadFoodOptionsFromSheet(sheetUrl)
+      .then((sheetFoodOptions) => {
+        if (!isMounted) return
+
+        setFoodOptions(sheetFoodOptions)
+        setSelections((current) => ({
+          breakfast: sheetFoodOptions.breakfast.includes(current.breakfast)
+            ? current.breakfast
+            : pickRandomFood('breakfast', '', sheetFoodOptions),
+          dinner: sheetFoodOptions.dinner.includes(current.dinner)
+            ? current.dinner
+            : pickRandomFood('dinner', '', sheetFoodOptions)
+        }))
+        setFoodSyncMessage('Đã tải thực đơn từ Google Sheet.')
+      })
+      .catch((error) => {
+        console.error('Không thể tải thực đơn từ Google Sheet:', error)
+        if (isMounted) {
+          setFoodSyncMessage('Không thể tải thực đơn từ Google Sheet; đang dùng danh sách mặc định.')
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [sheetUrl])
 
   const rollMeal = useCallback((meal) => {
     const previousTimers = rollTimers.current[meal]
@@ -499,20 +531,20 @@ function FoodPage() {
 
     setRollingMeals((current) => ({ ...current, [meal]: true }))
     const interval = setInterval(() => {
-      setSelections((current) => ({ ...current, [meal]: pickRandomFood(meal) }))
+      setSelections((current) => ({ ...current, [meal]: pickRandomFood(meal, '', foodOptions) }))
     }, 100)
     const timeout = setTimeout(() => {
       clearInterval(interval)
       setSelections((current) => ({
         ...current,
-        [meal]: pickRandomFood(meal, current[meal])
+        [meal]: pickRandomFood(meal, current[meal], foodOptions)
       }))
       setRollingMeals((current) => ({ ...current, [meal]: false }))
       delete rollTimers.current[meal]
     }, 3000)
 
     rollTimers.current[meal] = { interval, timeout }
-  }, [])
+  }, [foodOptions])
 
   useEffect(() => {
     document.title = 'Chọn món | KiDu'
@@ -585,7 +617,8 @@ function FoodPage() {
         <section className="food-intro">
           <p className="eyebrow">Gợi ý thực đơn</p>
           <h1>Hôm nay ăn gì?</h1>
-          <p>Chọn một món ăn sáng và một món ăn tối từ danh sách có sẵn.</p>
+          <p className="food-description">Chọn một món ăn sáng và một món ăn tối từ danh sách có sẵn.</p>
+          <p className="food-sync-message" role="status">{foodSyncMessage}</p>
         </section>
 
         <div className="food-meals">

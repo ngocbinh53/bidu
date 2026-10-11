@@ -133,6 +133,58 @@ export async function loadAppointmentsFromSheet(url) {
   return result
 }
 
+export async function loadFoodOptionsFromSheet(url) {
+  if (!url) {
+    throw new Error('Chưa cấu hình URL Google Sheet API')
+  }
+
+  const endpoint = new URL(url)
+  endpoint.searchParams.set('action', 'food')
+
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(`Không thể tải thực đơn từ Google Sheet (HTTP ${response.status})`)
+  }
+
+  let payload
+  try {
+    payload = await response.json()
+  } catch {
+    throw new Error('Google Sheet API không trả về JSON hợp lệ')
+  }
+
+  if (payload?.error) {
+    throw new Error(payload.error)
+  }
+
+  const foodData = payload?.data && typeof payload.data === 'object'
+    ? payload.data
+    : payload
+
+  return Object.fromEntries(['breakfast', 'dinner'].map((meal) => {
+    const values = foodData?.[meal]
+    if (!Array.isArray(values)) {
+      throw new Error(`Google Sheet API thiếu danh sách ${meal}`)
+    }
+
+    const foods = [...new Set(values
+      .map((food) => String(food ?? '').trim())
+      .filter(Boolean))]
+
+    if (!foods.length) {
+      throw new Error(`Danh sách ${meal} trong Google Sheet đang trống`)
+    }
+
+    return [meal, foods]
+  }))
+}
+
 export async function saveAppointmentsToSheet(url, appointments) {
   if (!url) {
     return appointments
@@ -165,7 +217,8 @@ export async function saveAppointmentsToSheet(url, appointments) {
 }
 
 export function getSheetApiUrl() {
-  const url = 'https://script.google.com/macros/s/AKfycbwx2dnAA1g3JxFvfp4bruk_fBNSzfZ81FTjmLrplLpMS-TLfCe7VAvjrxFuaUw5cNtd/exec'
+  // const url = 'https://script.google.com/macros/s/AKfycbwx2dnAA1g3JxFvfp4bruk_fBNSzfZ81FTjmLrplLpMS-TLfCe7VAvjrxFuaUw5cNtd/exec'
+  const url = 'https://script.google.com/macros/s/AKfycbwd-HkVbatxUYKOqxm6UoYuTz3zrPLAnqV5Y9sZJk8eOuQf66HybblU4DEDGRHUoQzA/exec'
   return url
 }
 

@@ -811,10 +811,16 @@ button, input {
   color: #352b25;
 }
 
-.food-intro > p:last-child {
+.food-intro .food-description {
   margin: 0;
   color: #796e67;
   font-size: 1rem;
+}
+
+.food-intro .food-sync-message {
+  margin: 8px 0 0;
+  color: #8b6556;
+  font-size: 0.82rem;
 }
 
 .food-meals {
