@@ -146,8 +146,27 @@ function getStatusClass(status) {
   return 'neutral'
 }
 
+function isDentalAppointment(item) {
+  const appointmentDetails = `${item?.label || ''} ${item?.location || ''}`.toLowerCase()
+  return /nha\s*khoa|nha sĩ|dental/.test(appointmentDetails)
+}
+
+function isRestAppointment(item) {
+  const position = String(item?.label || '').trim().toLowerCase()
+  return position === 'home' || position === 'nghỉ ngơi'
+}
+
+function getAppointmentType(item) {
+  if (isRestAppointment(item)) {
+    return String(item?.label || '').trim().toLowerCase() === 'home' ? 'Home' : 'Nghỉ ngơi'
+  }
+  return isDentalAppointment(item) ? 'Nha khoa' : 'Bệnh viện'
+}
+
 function getTimelineIcon(item) {
   const label = String(item?.label || '').toLowerCase()
+  if (isRestAppointment(item)) return '🏠'
+  if (isDentalAppointment(item)) return '🦷'
   if (label.includes('trực') || label.includes('24h') || label.includes('suốt')) return '🏥'
   if (label.includes('mổ') || label.includes('phẫu thuật') || label.includes('surgery')) return '🩺'
   if (label.includes('khám') || label.includes('nha') || label.includes('xét nghiệm')) return '🦷'
@@ -341,7 +360,7 @@ function ClinicApp() {
 
         <section className="timeline-section">
           <div className="section-heading-row">
-            <h3>Lịch trình đi bệnh viện</h3>
+            <h3>Lịch trình sắp tới</h3>
           </div>
 
           <div className="care-grid">
@@ -352,15 +371,18 @@ function ClinicApp() {
               if (isPast) return null
 
               const isUrgent = status === 'Cần chú ý' || status === 'Hôm nay'
+              const isDental = isDentalAppointment(item)
+              const isRest = isRestAppointment(item)
 
               return (
-                <div key={`${item.date}-${item.location}`} className={`care-card ${isUrgent ? 'urgent' : ''}`}>
+                <div key={`${item.date}-${item.location}`} className={`care-card ${isUrgent ? 'urgent' : ''} ${isDental ? 'dental' : ''} ${isRest ? 'rest' : ''}`}>
                   <div className="care-card-icon">{getTimelineIcon(item)}</div>
 
-                  
-
                   <div className="care-card-title">{item.label}</div>
-                  <div className="care-card-location">{item.location}</div>
+                  <div className="care-card-location">
+                    <span className="care-card-type">{getAppointmentType(item)}</span>
+                    <span>{item.location}</span>
+                  </div>
                   <div className="care-card-date">{formatLongDate(item.date)}</div>
                   <div className="care-card-countdown">{formatCountdown(item.date)}</div>
                 </div>
@@ -383,7 +405,7 @@ function ClinicApp() {
 
             <div className="detail-body">
               <div className="detail-row">
-                <span>Bệnh viện</span>
+                <span>{getAppointmentType(selectedDetail)}</span>
                 <strong>{selectedDetail.location}</strong>
               </div>
               <div className="detail-row">
